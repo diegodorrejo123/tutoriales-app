@@ -1,36 +1,43 @@
 const express = require('express');
 const Category = require('../models/Category')
+const Post = require('../models/Post')
 const router = new express.Router()
 
-router.get('/category', async (req, res) => {
+router.get('/post', async (req, res) => {
     const sort = {}
     if(req.query.sortBy){
         const parts = req.query.sortBy.split(':')
         sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
     }
     try {
-        const categories = await Category.find({}).sort(sort)
-        res.send(categories)
+        const post = await Post.find({}).populate({
+            path: 'categories',
+            options: {
+                sort
+            },
+            select: '-posts'
+        })
+        res.send(post)
     } catch (error) {
         res.send(error)
     }
 })
-router.post('/category', async (req, res) => {
-    const category = new Category({
+router.post('/post', async (req, res) => {
+    const post = new Post({
         ...req.body
     })
     try {
-        await category.save()
-        res.status(201).send(category)
+        await post.save()
+        res.status(201).send(post)
     } catch (error) {
         res.status(400).send(error)
     }
 })
-router.get('/category/:id', async (req, res) => {
+router.get('/post/:id', async (req, res) => {
     const _id = req.params.id
     try {
-        const category = await Category.findOne({_id})
-        if(!category){
+        const post = await Post.findOne({_id})
+        if(!post){
             res.status(404).send({
                 succes: false,
                 error: true,
@@ -38,27 +45,27 @@ router.get('/category/:id', async (req, res) => {
                 message: "Categoría no encontrada"
             })
         }
-        res.send(category)
+        res.send(post)
     } catch (error) {
         res.status(500).send()
     }
 })
-router.delete('/category/:id', async (req, res) => {
+router.delete('/post/:id', async (req, res) => {
     const _id = req.params.id
     try {
-        const category = await Category.findByIdAndDelete(_id)
-        if(!category){
+        const post = await Post.findByIdAndDelete(_id)
+        if(!post){
             return res.status(404).send()
         }
-        res.send(category)
+        res.send(post)
     } catch (error) {
         res.status(500).send()
     }
 })
 
-router.put('/category/:id', async (req, res) => {
+router.put('/post/:id', async (req, res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['name', 'posts']
+    const allowedUpdates = ['title', 'categories']
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
     if(!isValidOperation){
         return res.status(400).send({
@@ -69,15 +76,15 @@ router.put('/category/:id', async (req, res) => {
         })
     }
     try {
-        const category = await Category.findOne({_id: req.params.id})
-        if(!category){
+        const post = await Post.findOne({_id: req.params.id})
+        if(!post){
             return res.status(404).send()
         }
-        updates.forEach((update) => category[update] = req.body[update])
-        await category.save()
-        res.send(category)
+        updates.forEach((update) => post[update] = req.body[update])
+        await post.save()
+        res.send(post)
     } catch (error) {
-        res.status(400).send(error)
+        res.status(400).send()
     }
 })
 module.exports = router
