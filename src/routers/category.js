@@ -9,7 +9,14 @@ router.get('/category', async (req, res) => {
         sort[parts[0]] = parts[1] === 'desc' ? -1 : 1
     }
     try {
-        const categories = await Category.find({}).sort(sort)
+        const categories = await Category.find({}).populate({
+            path: 'posts',
+            options: {
+                sort,
+                select: "-categories"
+            }
+        })
+        //.sort(sort)
         res.send(categories)
     } catch (error) {
         res.send(error)
@@ -58,7 +65,7 @@ router.delete('/category/:id', async (req, res) => {
 
 router.put('/category/:id', async (req, res) => {
     const updates = Object.keys(req.body)
-    const allowedUpdates = ['name', 'posts']
+    const allowedUpdates = ['name']
     const isValidOperation = updates.every((update) => allowedUpdates.includes(update))
     if(!isValidOperation){
         return res.status(400).send({
